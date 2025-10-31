@@ -33,6 +33,7 @@ limitations under the License.
 #include "absl/log/log.h"
 #include "absl/memory/memory.h"
 #include "absl/status/status.h"
+#include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_replace.h"
@@ -495,13 +496,13 @@ absl::StatusOr<std::vector<Autotuner::ConfigResult>> Autotuner::ProfileAll(
 absl::StatusOr<Autotuner::ConfigResult> Autotuner::PickBestConfig(
     std::vector<ConfigResult>& results) {
   if (autotune_config_.exclude_cublas_config) {
-    results.erase(
-        std::remove_if(results.begin(), results.end(),
-                       [](const ConfigResult& result) {
-                         return result.config.codegen_backend->name() ==
-                                "cublas";
-                       }),
-        results.end());
+    results.erase(std::remove_if(results.begin(), results.end(),
+                                 [](const ConfigResult& result) {
+                                   return absl::StrContains(
+                                       result.config.codegen_backend->name(),
+                                       "Cublas");
+                                 }),
+                  results.end());
   }
 
   absl::Duration min_duration = absl::InfiniteDuration();
