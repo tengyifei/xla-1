@@ -26,6 +26,7 @@ limitations under the License.
 
 #include <gtest/gtest.h>
 #include "absl/status/status.h"
+#include "absl/status/status_matchers.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
@@ -45,6 +46,7 @@ limitations under the License.
 namespace xla {
 namespace {
 
+using ::absl_testing::StatusIs;
 using ::testing::ElementsAre;
 
 TEST(ShapeUtilTest, GetDimensionHelperCanNegativeIndex) {
@@ -348,6 +350,20 @@ TEST(ShapeUtilTest, ByteStrides) {
 
   EXPECT_THAT(*ShapeUtil::ByteStrides(shape1), ElementsAre(140, 28, 4));
   EXPECT_THAT(*ShapeUtil::ByteStrides(shape2), ElementsAre(126, 18, 2));
+}
+
+TEST(ShapeUtilTest, ByteStridesFailsOnFractionalElementSize) {
+  Shape shape = ShapeUtil::MakeShape(S4, {10, 20});
+  shape.mutable_layout()->set_element_size_in_bits(4);
+
+  std::vector<int64_t> strides(shape.dimensions().size());
+  absl::Status status = ShapeUtil::ByteStrides(shape, absl::MakeSpan(strides));
+  EXPECT_THAT(
+      status,
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               ::testing::HasSubstr("Element size in bytes is fractional")));
+
+  EXPECT_THAT(ShapeUtil::ByteStrides(shape), std::nullopt);
 }
 
 TEST(ShapeUtilTest, NilShape) {

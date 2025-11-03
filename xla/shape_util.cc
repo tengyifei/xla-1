@@ -2206,6 +2206,10 @@ absl::Status ShapeUtil::ByteStrides(const Shape& shape,
   TF_RET_CHECK(shape.IsArray());
   TF_RET_CHECK(shape.has_layout());
   TF_RET_CHECK(shape.dimensions().size() == strides.size());
+  if (shape.layout().element_size_in_bits() % CHAR_BIT != 0) {
+    return absl::InvalidArgumentError(absl::StrCat(
+        "Element size in bytes is fractional: ", shape.ToString()));
+  }
 
   int64_t stride = ByteSizeOfPrimitiveType(shape.element_type());
   for (int i : shape.layout().minor_to_major()) {
